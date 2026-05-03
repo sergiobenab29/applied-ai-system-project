@@ -1,9 +1,18 @@
 from __future__ import annotations
 
+import json
+import logging
+import os
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 from typing import List, Optional
+
+logging.basicConfig(
+    filename="ai_log.txt",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s: %(message)s",
+)
 
 
 class Priority(str, Enum):
@@ -232,3 +241,65 @@ class Scheduler:
                 lines.append(f"  ! {w}")
 
         return "\n".join(lines)
+
+
+class AIParser:
+    def __init__(self):
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY environment variable is not set.")
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel("gemini-1.5-flash")
+
+    def parse_tasks(self, description: str) -> List[dict]:
+        prompt = (
+            "You are a pet care assistant. Extract pet care tasks from the description below "
+            "and return ONLY a JSON array. No explanation, no markdown.\n\n"
+            "Each item must have these exact fields:\n"
+            '- "pet_name": the pet\'s name (string)\n'
+            '- "title": short task name (string)\n'
+            '- "duration_minutes": how long the task takes in minutes (integer, estimate if not stated)\n'
+            '- "priority": one of "low", "medium", or "high" (string)\n\n'
+            f'Description: "{description}"\n\n'
+            "Return ONLY the JSON array."
+        )
+
+        logging.info("AI request: %s", description)
+
+        try:
+            response = self.model.generate_content(prompt)
+            raw = response.text.strip()
+            logging.info("AI response: %s", raw)
+
+            # Strip markdown code fences if Gemini wraps the response
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+                raw = raw.strip()
+
+            tasks = json.loads(raw)
+
+            validated = []
+            for task in tasks:
+                required = ("pet_name", "title", "duration_minutes", "priority")
+                if not all(k in task for k in required):
+                    logging.warning("Task missing required fields, skipping: %s", task)
+                    continue
+                if not isinstance(task["duration_minutes"], int) or task["duration_minutes"] <= 0:
+                    logging.warning("Invalid duration for task, defaulting to 15: %s", task)
+                    task["duration_minutes"] = 15
+                if task["priority"] not in ("low", "medium", "high"):
+                    logging.warning("Invalid priority for task, defaulting to medium: %s", task)
+                    task["priority"] = "medium"
+                validated.append(task)
+
+            return validated
+
+        except json.JSONDecodeError as e:
+            logging.error("Failed to parse AI response as JSON: %s | Raw: %s", e, raw)
+            raise ValueError("The AI returned an unreadable response. Please try again.")
+        except Exception as e:
+            logging.error("AI call failed: %s", e)
+            raise ValueError(f"AI error: {e}")

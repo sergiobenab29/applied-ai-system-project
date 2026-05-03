@@ -1,56 +1,104 @@
-# PawPal+ (Module 2 Project)
+# PawPal+ AI Scheduling Assistant
 
-PawPal+ is a Streamlit app that helps a pet owner plan daily care tasks for their pets. You enter your pets, add tasks with priorities, and the app builds a smart schedule that fits your day.
+PawPal+ helps pet owners plan their day. You describe what your pet needs in plain English, and the AI turns it into a scheduled task list automatically.
 
-## 📸 Demo
+---
 
-<a href="/course_images/ai110/pawpal.png" target="_blank"><img src='/course_images/ai110/pawpal.png' title='PawPal App' width='' alt='PawPal App' class='center-block' /></a>
+## Original Project
 
-## Scenario
+This builds on **PawPal+ (Module 2)**, a Streamlit app where users manually added pet care tasks and got a daily schedule. It handled priority sorting, recurring tasks, and conflict detection. The goal was to help busy pet owners stay consistent with their routines.
 
-A busy pet owner needs help staying consistent with pet care. They want an assistant that can:
+---
 
-- Track pet care tasks (walks, feeding, meds, enrichment, grooming, etc.)
-- Consider constraints (time available, priority, owner preferences)
-- Produce a daily plan and explain why it chose that plan
+## What's New
 
-## Features
+Instead of filling out a form, you just type something like:
 
-- **Add multiple pets** — track dogs, cats, or any animal separately
-- **Task management** — assign tasks to specific pets with duration, priority, and recurrence
-- **Smart sorting** — tasks are scheduled high-priority first; ties broken by duration so more tasks fit
-- **Recurring tasks** — mark a daily or weekly task done and the next occurrence is auto-created
-- **Filtering** — view only pending or completed tasks, or filter by pet
-- **Conflict warnings** — overlapping tasks or overloaded days show a warning instead of crashing
-- **Interactive schedule** — generates a time-blocked daily plan displayed as a clean table
+> "My dog needs a 30-minute walk and his pill every morning"
 
-## Testing PawPal+
+The AI reads it, creates the tasks, and adds them to your schedule.
 
-Run the full test suite with:
+---
 
+## System Diagram
+
+![System Architecture](assets/flowchart.png)
+
+**How data flows:**
+1. You type a description in the app
+2. The AI (Gemini Flash) extracts task details from it
+3. The app checks the response is valid before using it
+4. Tasks get added to your schedule
+5. Everything is logged in `ai_log.txt`
+
+---
+
+## Setup
+
+**1. Clone the repo**
 ```bash
-python3 -m pytest tests/ -v
+git clone https://github.com/sergiobenab29/applied-ai-system-project.git
+cd applied-ai-system-project
 ```
 
-The tests cover 12 behaviors across two categories:
-
-- **Happy paths** — task completion, adding tasks, priority ordering, daily recurrence, and filtering by status
-- **Edge cases** — empty pet schedule, tasks too long to fit, overlapping time conflicts, non-recurring tasks, and owner with no pets
-
-Confidence level: ★★★★☆ — the core scheduling logic and edge cases are well covered. The main area not fully tested is the Streamlit UI layer.
-
-## Getting started
-
-### Setup
-
+**2. Create a virtual environment**
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate
+```
+
+**3. Install dependencies**
+```bash
 pip install -r requirements.txt
 ```
 
-### Run the app
+**4. Get a free Gemini API key**
+- Go to [aistudio.google.com](https://aistudio.google.com)
+- Sign in with Google and click **Get API key**
 
+**5. Add your key**
+```bash
+export GEMINI_API_KEY="your-key-here"
+```
+
+**6. Run the app**
 ```bash
 streamlit run app.py
 ```
+
+---
+
+## Sample Interactions
+
+> _To be filled in once the AI feature is complete._
+
+| Input | AI Output |
+|-------|-----------|
+| "My dog Max needs a 30-min walk and his pill" | _(add result here)_ |
+| "Luna needs feeding twice a day and grooming" | _(add result here)_ |
+| "Rocky has a 1-hour vet visit, high priority" | _(add result here)_ |
+
+---
+
+## Design Decisions
+
+- **Gemini Flash** — free tier, no credit card needed, works well for short tasks
+- **Built into the existing app** — the scheduling logic already worked, so the AI just adds a smarter input method
+- **Guardrails first** — if the AI returns something unusable, the app shows an error instead of crashing
+- **Flat file logging** — simple and good enough for a course project; a real app would use a proper database
+
+---
+
+## Testing
+
+> _To be filled in after testing the AI feature._
+
+The existing test suite covers 12 scheduling behaviors. After building the AI layer, tests will also check that valid inputs create correct tasks and that bad responses are caught safely.
+
+---
+
+## Reflection
+
+The biggest thing I learned is that making AI reliable matters more than making it impressive. A feature that crashes silently is worse than no feature at all — so building error handling before anything else was the right move.
+
+I also learned that AI works best when it removes friction from something people already want to do, not when it replaces things that already work.

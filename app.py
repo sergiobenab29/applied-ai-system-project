@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import date, time
-from pawpal_system import Owner, Pet, Task, Priority, Scheduler
+from pawpal_system import AIParser, Owner, Pet, Task, Priority, Scheduler
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
@@ -87,6 +87,53 @@ else:
                         t.mark_completed()
                         pet.refresh_recurring_tasks(date.today())
                         st.rerun()
+
+st.divider()
+
+# --- AI Assistant ---
+st.subheader("AI Assistant")
+
+if not owner.pets:
+    st.info("Add a pet first, then describe their tasks here.")
+else:
+    ai_description = st.text_area(
+        "Describe what your pet needs",
+        placeholder='e.g. "Max needs a 30-minute walk and his pill every morning"',
+        height=80,
+    )
+
+    if st.button("Add tasks with AI"):
+        if not ai_description.strip():
+            st.warning("Please enter a description first.")
+        else:
+            try:
+                parser = AIParser()
+                parsed_tasks = parser.parse_tasks(ai_description)
+
+                if not parsed_tasks:
+                    st.error("The AI couldn't find any tasks in that description. Try being more specific.")
+                else:
+                    added = 0
+                    for task_data in parsed_tasks:
+                        matched_pet = next(
+                            (p for p in owner.pets if p.name.lower() == task_data["pet_name"].lower()),
+                            None,
+                        )
+                        if matched_pet is None:
+                            st.warning(f"Pet '{task_data['pet_name']}' not found. Add them first.")
+                            continue
+                        matched_pet.add_task(Task(
+                            title=task_data["title"],
+                            duration_minutes=task_data["duration_minutes"],
+                            priority=Priority(task_data["priority"]),
+                        ))
+                        added += 1
+
+                    if added > 0:
+                        st.success(f"Added {added} task(s) from your description!")
+                        st.rerun()
+            except ValueError as e:
+                st.error(str(e))
 
 st.divider()
 
