@@ -33,6 +33,7 @@ class Task:
     recurring: Optional[str] = None  # "daily", "weekly", or None
     notes: Optional[str] = None
     due_date: Optional[date] = field(default_factory=date.today)
+    time_of_day: Optional[str] = None  # e.g. "morning", "evening", "afternoon"
 
     def mark_completed(self) -> None:
         """Mark this task as done."""
@@ -260,7 +261,8 @@ class AIParser:
             '- "title": specific, descriptive task name — e.g. "Morning walk", "Give heartworm pill", "Vet checkup" (string)\n'
             '- "duration_minutes": realistic estimate in minutes — walks 20-60 min, meals 10 min, pills 5 min, grooming 30-60 min, vet visits 60 min (integer)\n'
             '- "priority": one of "low", "medium", or "high" — meds and vet visits are high, walks medium, grooming low (string)\n'
-            '- "recurring": "daily" if it happens every day, "weekly" if every week, null if one-time (string or null)\n\n'
+            '- "recurring": "daily" only if the description says "every day" or "daily", "weekly" only if it says "every week" or "weekly", null for everything else including "this week" or one-time events (string or null)\n'
+            '- "time_of_day": use the exact time if mentioned (e.g. "7am", "4pm"), otherwise use "morning", "afternoon", or "evening", or null if not mentioned at all (string or null)\n\n'
             f'Description: "{description}"\n\n'
             "Return ONLY the JSON array."
         )

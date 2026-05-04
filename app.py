@@ -53,7 +53,7 @@ else:
     selected_pet_name = st.selectbox("Assign to pet", pet_names)
     selected_pet = next(p for p in owner.pets if p.name == selected_pet_name)
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         task_title = st.text_input("Task title", value="Morning walk")
     with col2:
@@ -62,6 +62,8 @@ else:
         priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
     with col4:
         recurring = st.selectbox("Recurring", ["none", "daily", "weekly"])
+    with col5:
+        time_of_day = st.text_input("Time (optional)", placeholder="e.g. 8am")
 
     if st.button("Add task"):
         selected_pet.add_task(Task(
@@ -69,6 +71,7 @@ else:
             duration_minutes=int(duration),
             priority=Priority(priority),
             recurring=None if recurring == "none" else recurring,
+            time_of_day=time_of_day.strip() or None,
         ))
         st.success(f"Task '{task_title}' added to {selected_pet_name}.")
 
@@ -80,8 +83,9 @@ else:
             for i, t in enumerate(pending):
                 col_a, col_b = st.columns([4, 1])
                 with col_a:
-                    st.write(f"{t.title} — {t.duration_minutes} min | {t.priority.value} priority"
-                             + (f" | repeats {t.recurring}" if t.recurring else ""))
+                    recurring_str = f" | repeats {t.recurring}" if t.recurring else ""
+                    time_str = f" | {t.time_of_day}" if t.time_of_day else ""
+                    st.write(f"{t.title} — {t.duration_minutes} min | {t.priority.value} priority{time_str}{recurring_str}")
                 with col_b:
                     if st.button("Done", key=f"done_{pet.name}_{i}"):
                         t.mark_completed()
@@ -127,6 +131,7 @@ else:
                             duration_minutes=task_data["duration_minutes"],
                             priority=Priority(task_data["priority"]),
                             recurring=task_data.get("recurring"),
+                            time_of_day=task_data.get("time_of_day"),
                         ))
                         added += 1
 
