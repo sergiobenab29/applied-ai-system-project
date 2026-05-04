@@ -98,7 +98,7 @@ if not owner.pets:
 else:
     ai_description = st.text_area(
         "Describe what your pet needs",
-        placeholder='e.g. "Max needs a 30-minute walk and his pill every morning"',
+        placeholder='e.g. "Mochi needs a 30-minute walk and her pill every morning"',
         height=80,
     )
 
@@ -126,6 +126,7 @@ else:
                             title=task_data["title"],
                             duration_minutes=task_data["duration_minutes"],
                             priority=Priority(task_data["priority"]),
+                            recurring=task_data.get("recurring"),
                         ))
                         added += 1
 

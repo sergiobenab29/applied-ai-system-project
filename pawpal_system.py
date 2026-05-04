@@ -245,12 +245,11 @@ class Scheduler:
 
 class AIParser:
     def __init__(self):
-        api_key = os.environ.get("GEMINI_API_KEY")
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
-            raise ValueError("GEMINI_API_KEY environment variable is not set.")
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+            raise ValueError("GROQ_API_KEY environment variable is not set.")
+        from groq import Groq
+        self.client = Groq(api_key=api_key)
 
     def parse_tasks(self, description: str) -> List[dict]:
         prompt = (
@@ -258,9 +257,10 @@ class AIParser:
             "and return ONLY a JSON array. No explanation, no markdown.\n\n"
             "Each item must have these exact fields:\n"
             '- "pet_name": the pet\'s name (string)\n'
-            '- "title": short task name (string)\n'
-            '- "duration_minutes": how long the task takes in minutes (integer, estimate if not stated)\n'
-            '- "priority": one of "low", "medium", or "high" (string)\n\n'
+            '- "title": specific, descriptive task name — e.g. "Morning walk", "Give heartworm pill", "Vet checkup" (string)\n'
+            '- "duration_minutes": realistic estimate in minutes — walks 20-60 min, meals 10 min, pills 5 min, grooming 30-60 min, vet visits 60 min (integer)\n'
+            '- "priority": one of "low", "medium", or "high" — meds and vet visits are high, walks medium, grooming low (string)\n'
+            '- "recurring": "daily" if it happens every day, "weekly" if every week, null if one-time (string or null)\n\n'
             f'Description: "{description}"\n\n'
             "Return ONLY the JSON array."
         )
@@ -268,11 +268,14 @@ class AIParser:
         logging.info("AI request: %s", description)
 
         try:
-            response = self.model.generate_content(prompt)
-            raw = response.text.strip()
+            response = self.client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = response.choices[0].message.content.strip()
             logging.info("AI response: %s", raw)
 
-            # Strip markdown code fences if Gemini wraps the response
+            # Strip markdown code fences if the model wraps the response
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
                 if raw.startswith("json"):
